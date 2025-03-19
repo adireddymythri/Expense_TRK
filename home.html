@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f4f4f4; }
+        .container { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); width: 400px; text-align: center; }
+        h2 { margin-bottom: 10px; }
+        .hidden { display: none; }
+        input, select, button { width: 100%; padding: 8px; margin: 5px 0; border-radius: 5px; border: 1px solid #ccc; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .logout { background: red; }
+        .delete { background: darkred; }
+        
+        /* Updated Layout */
+        .summary { display: flex; justify-content: space-between; padding: 10px; margin-top: 10px; border-radius: 5px; background: #eee; }
+        .income { color: green; font-weight: bold; }
+        .expense { color: red; font-weight: bold; }
+        
+        .transactions { margin-top: 10px; text-align: left; }
+        .transactions ul { list-style-type: none; padding: 0; }
+        .transactions li { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #ddd; }
+        
+        /* Added style for balance */
+        .balance { 
+            font-size: 18px; 
+            margin-top: 10px; 
+            padding: 10px; 
+            background: yellow; /* Highlighted background color */
+            border-radius: 5px; 
+            color: black; /* Text color to maintain contrast */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN PAGE -->
+    <div class="container" id="loginPage">
+        <h2>Login</h2>
+        <input type="text" id="login-username" placeholder="Username">
+        <input type="password" id="login-password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <button onclick="showSignUp()">Sign Up</button>
+    </div>
+
+    <!-- SIGN UP PAGE -->
+    <div class="container hidden" id="signUpPage">
+        <h2>Sign Up</h2>
+        <input type="text" id="signup-username" placeholder="Username">
+        <input type="password" id="signup-password" placeholder="Password">
+        <input type="password" id="confirm-password" placeholder="Confirm Password">
+        <button onclick="signUp()">Sign Up</button>
+        <button onclick="goToLogin()">Back to Login</button>
+    </div>
+
+    <!-- EXPENSE TRACKER -->
+    <div class="container hidden" id="expenseTracker">
+        <h2>Expense Tracker</h2>
+
+        <div class="summary">
+            <div>Income: <span id="total-income" class="income">$0.00</span></div>
+            <div>Expense: <span id="total-expense" class="expense">$0.00</span></div>
+        </div>
+
+        <div class="balance" id="total-balance">
+            Total Balance: $0.00
+        </div>
+
+        <div class="transactions">
+            <h3>Transactions</h3>
+            <ul id="transaction-list"></ul>
+        </div>
+
+        <div class="transaction-box">
+            <input type="text" id="name" placeholder="Transaction Name">
+            <input type="number" id="amount" placeholder="Amount">
+            <input type="date" id="date">
+            <select id="type">
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+            </select>
+            <button onclick="addTransaction()">Add Transaction</button>
+            <button class="logout" onclick="logout()">Logout</button>
+            <button class="delete" onclick="deleteAccount()">Delete Account</button>
+        </div>
+    </div>
+
+    <script>
+        let totalIncome = 0, totalExpense = 0;
+        let transactions = [];
+
+        // Login Function
+        function login() {
+            let username = document.getElementById("login-username").value;
+            let password = document.getElementById("login-password").value;
+
+            let user = localStorage.getItem(username);
+            if (!user) {
+                alert("User not found! Please sign up.");
+                return;
+            }
+
+            let userData = JSON.parse(user);
+            if (userData.password !== password) {
+                alert("Incorrect password!");
+                return;
+            }
+
+            localStorage.setItem("loggedInUser", username);
+            document.getElementById("loginPage").classList.add("hidden");
+            document.getElementById("expenseTracker").classList.remove("hidden");
+            loadTransactions();
+        }
+
+        // Sign Up Function
+        function signUp() {
+            let username = document.getElementById("signup-username").value;
+            let password = document.getElementById("signup-password").value;
+            let confirmPassword = document.getElementById("confirm-password").value;
+
+            if (password !== confirmPassword) {
+                alert("Passwords do not match!");
+                return;
+            }
+
+            if (localStorage.getItem(username)) {
+                alert("Username already exists! Please choose a different username.");
+                return;
+            }
+
+            let userData = {
+                username: username,
+                password: password,
+                transactions: []
+            };
+
+            localStorage.setItem(username, JSON.stringify(userData));
+            alert("Account created successfully! Please log in.");
+            goToLogin();
+        }
+
+        // Switch to Sign Up page
+        function showSignUp() {
+            document.getElementById("loginPage").classList.add("hidden");
+            document.getElementById("signUpPage").classList.remove("hidden");
+        }
+
+        // Go back to Login page
+        function goToLogin() {
+            document.getElementById("signUpPage").classList.add("hidden");
+            document.getElementById("loginPage").classList.remove("hidden");
+        }
+
+        // Logout Function
+        function logout() {
+            localStorage.removeItem("loggedInUser");
+            document.getElementById("expenseTracker").classList.add("hidden");
+            document.getElementById("loginPage").classList.remove("hidden");
+
+            // Clear the login fields after logout
+            document.getElementById("login-username").value = "";
+            document.getElementById("login-password").value = "";
+        }
+
+        // Delete Account Function
+        function deleteAccount() {
+            let user = localStorage.getItem("loggedInUser");
+            if (user) {
+                localStorage.removeItem(user);
+                localStorage.removeItem("loggedInUser");
+                alert("Account Deleted Successfully!");
+                location.reload();
+            }
+        }
+
+        // Add Transaction Function
+        function addTransaction() {
+            let name = document.getElementById("name").value;
+            let amount = parseFloat(document.getElementById("amount").value);
+            let date = document.getElementById("date").value;
+            let type = document.getElementById("type").value;
+
+            if (!name || isNaN(amount) || amount <= 0 || !date) {
+                alert("Please enter valid details!");
+                return;
+            }
+
+            let user = localStorage.getItem("loggedInUser");
+            if (!user) return;
+
+            let userData = JSON.parse(localStorage.getItem(user));
+            userData.transactions.push({ name, amount, date, type });
+
+            if (type === "income") totalIncome += amount;
+            else totalExpense += amount;
+
+            localStorage.setItem(user, JSON.stringify(userData));
+            updateUI();
+            document.getElementById("name").value = "";
+            document.getElementById("amount").value = "";
+            document.getElementById("date").value = "";
+        }
+
+        // Load Transactions Function
+        function loadTransactions() {
+            let user = localStorage.getItem("loggedInUser");
+            if (!user) return;
+
+            let userData = JSON.parse(localStorage.getItem(user));
+            transactions = userData.transactions;
+
+            totalIncome = transactions.filter(t => t.type === "income").reduce((acc, t) => acc + t.amount, 0);
+            totalExpense = transactions.filter(t => t.type === "expense").reduce((acc, t) => acc + t.amount, 0);
+
+            updateUI();
+        }
+
+        // Update UI with Transactions and Balance
+        function updateUI() {
+            document.getElementById("total-income").innerText = `$${totalIncome.toFixed(2)}`;
+            document.getElementById("total-expense").innerText = `$${totalExpense.toFixed(2)}`;
+            
+            // Calculate the total balance
+            let balance = totalIncome - totalExpense;
+            document.getElementById("total-balance").innerText = `Total Balance: $${balance.toFixed(2)}`;
+
+            let list = document.getElementById("transaction-list");
+            list.innerHTML = "";
+            transactions.forEach(t => {
+                let li = document.createElement("li");
+                li.innerHTML = `<span>${t.date} - ${t.name}</span> <span class="${t.type}">${t.type === 'income' ? '+' : '-'}$${t.amount.toFixed(2)}</span>`;
+                list.appendChild(li);
+            });
+        }
+
+        // Load user data on page load
+        window.onload = function() {
+            if (localStorage.getItem("loggedInUser")) {
+                document.getElementById("loginPage").classList.add("hidden");
+                document.getElementById("expenseTracker").classList.remove("hidden");
+                loadTransactions();
+            }
+        };
+    </script>
+
+</body>
+</html>

@@ -31,3 +31,10 @@ A simple and user-friendly **Expense Tracker** web app built using **HTML, CSS, 
 
 ```bash
 git clone https://github.com/adireddymythri/Expense_TRK/
+
+## Screenshots
+
+![Screenshot 1](Screenshot 2025-05-30 104033.png)
+![Screenshot 2](Screenshot 2025-05-30 104107.png)
+![Screenshot 3](Screenshot 2025-05-30 104303.png)
+
